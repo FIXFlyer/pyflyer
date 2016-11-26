@@ -1,0 +1,12 @@
+License
+=======
+
+Copyright (C) 2016 FixFlyer, LLC.
+
+The software, documentation, and other items contained in this
+collection are the property of FixFlyer, LLC.
+
+Unless otherwise stated, use of these items is subject to a valid
+license agreement with FixFlyer, LLC.
+
+Licensing inquiries should be directed to: support@fixflyer.com
