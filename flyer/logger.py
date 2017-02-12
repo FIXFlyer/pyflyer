@@ -6,7 +6,9 @@
 # COPYRIGHT_END
 #-----------------------------------------------------------------------
 
+import os
 import psutil
+import time
 
 
 # Emergency message level.
@@ -60,6 +62,7 @@ class Logger(object):
     redirected by using an adaptor that implements this interface.
     """
 
+    @staticmethod
     def string_to_level(level):
         """Convert a string level name to its integer value.
 
@@ -74,6 +77,8 @@ class Logger(object):
 
         return LEVELS.get(level)
 
+
+    @staticmethod
     def level_to_string(level):
         """Convert an integer level into its string name.
 
@@ -90,6 +95,7 @@ class Logger(object):
             return None
         return NAMES[level]
 
+
     def create_log(self, log):
         """Create a new log instance.
 
@@ -99,6 +105,7 @@ class Logger(object):
         @retval 0
            Successful."""
         pass
+
 
     def set_log_level(self, log, level):
         """Set current minimum log level.
@@ -115,6 +122,7 @@ class Logger(object):
         @retval ENOENT
             @p log does not exist."""
         pass
+
 
     def get_log_level(self, log, level_out):
         """Get the current minimum log level.
@@ -136,6 +144,7 @@ class Logger(object):
             @p log does not exist."""
         pass
 
+
     def log(self, log, level, message):
         """Log a message.
 
@@ -155,6 +164,7 @@ class Logger(object):
         @retval 0
             Successful."""
         pass
+
 
     def logf(self, log, level, format, *params):
         """Log a message, constructed printf()-style.
@@ -199,8 +209,6 @@ class FileLog(object):
 
     def set_level(self, level):
         self._level = level
-        logger = logging.getLogger(log)
-        logger.setLevel(level_to_py(level))
         return
 
     def get_level(self):
@@ -246,13 +254,14 @@ class FileLog(object):
 class FileLogger(Logger):
     """Default logging implementation."""
 
-
     def __init__(self, directory):
+        """Constructor."""
         self._directory = directory
         self._logs = {}
         return
 
     def __del__(self):
+        """Destructor."""
         for log in self._logs.values():
             log.close()
         return
@@ -266,8 +275,7 @@ class FileLogger(Logger):
         @returns
            None Successful."""
 
-        logr = FileLog(name, self._directory)
-        self._logs[name] = log
+        self._logs[name] = FileLog(name, self._directory)
         return
 
     def set_log_level(self, name, level):
