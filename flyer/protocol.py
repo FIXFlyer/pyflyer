@@ -6,6 +6,7 @@
 # COPYRIGHT_END
 #-----------------------------------------------------------------------
 
+"""Flyer remote protocol definitions."""
 
 # Carriage return + linefeed, used in properties serialisation.
 FLYER_CRLF = "\r\n"
@@ -18,43 +19,43 @@ FLYER_EOF = "EOF"
 
 
 
-PayloadEventId = 0;
-ResendEventId = 104;
-SessionLogonEventId = 105;
-SessionLogoutEventId = 106;
-RestoreEventId = 111;
-LogonResponseEventId = 200;
-HeartbeatEventId = 201;
-HeartbeatAckEventId = 202;
-LogonRequestEventId = 203;
-LogoutRequestEventId = 204;
-ErrorEventId = 301;
+PAYLOAD_EVENT_ID = 0
+RESEND_EVENT_ID = 104
+SESSION_LOGON_EVENT_ID = 105
+SESSION_LOGOUT_EVENT_ID = 106
+RESTORE_EVENT_ID = 111
+LOGON_RESPONSE_EVENT_ID = 200
+HEARTBEAT_EVENT_ID = 201
+HEARTBEAT_ACK_EVENT_ID = 202
+LOGON_REQUEST_EVENT_ID = 203
+LOGOUT_REQUEST_EVENT_ID = 204
+ERROR_EVENT_ID = 301
 
 
-HeartbeatMessageType = 0;
-PayloadMessageType = 1;
-CommonMessageType = 2;
-HeartbeatAckMessageType = 3;
-CommitMessageType = 4;
+HEARTBEAT_MESSAGE_TYPE = 0
+PAYLOAD_MESSAGE_TYPE = 1
+COMMON_MESSAGE_TYPE = 2
+HEARTBEAT_ACK_MESSAGE_TYPE = 3
+COMMIT_MESSAGE_TYPE = 4
 
 
-FlyerMessageTypeTag = 50001;
-FlyerRequestIdTag = 50002;
-FlyerFixMessageTypeTag = 50003;
-FlyerMessageSequenceNumberTag = 50004;
-FlyerSenderCompIdTag = 50005;
-FlyerTargetCompIdTag = 50006;
-FlyerMessageTag = 50007;
-FlyerPossDupTag = 50008;
-FlyerPossResendTag = 50009;
-FlyerLastAppSeqNoTag = 50010;
-FlyerEventTypeTag = 50011;
-FlyerBeginStringTag = 50012;
-FlyerSerialEventDataTag = 50013;
-FlyerRootFieldTag = 50014;
-FlyerEofTag = 50015;
-FlyerClientMessageIdTag = 50016;
-FlyerLastOutgoingMsgSeqNumTag = 50017;
-FlyerApplVerIdTag = 50018;
-FlyerCustomerApplVerIdTag = 50019;
-FlyerSessionQualifierTag = 50020;
+FLYER_MESSAGE_TYPE_TAG = 50001
+FLYER_REQUEST_ID_TAG = 50002
+FLYER_FIX_MESSAGE_TYPE_TAG = 50003
+FLYER_MESSAGE_SEQUENCE_NUMBER_TAG = 50004
+FLYER_SENDER_COMP_ID_TAG = 50005
+FLYER_TARGET_COMP_ID_TAG = 50006
+FLYER_MESSAGE_TAG = 50007
+FLYER_POSS_DUP_TAG = 50008
+FLYER_POSS_RESEND_TAG = 50009
+FLYER_LAST_APP_SEQ_NO_TAG = 50010
+FLYER_EVENT_TYPE_TAG = 50011
+FLYER_BEGIN_STRING_TAG = 50012
+FLYER_SERIAL_EVENT_DATA_TAG = 50013
+FLYER_ROOT_FIELD_TAG = 50014
+FLYER_EOF_TAG = 50015
+FLYER_CLIENT_MESSAGE_ID_TAG = 50016
+FLYER_LAST_OUTGOING_MSG_SEQ_NUM_TAG = 50017
+FLYER_APPLVER_ID_TAG = 50018
+FLYER_CUSTOMER_APPLVER_ID_TAG = 50019
+FLYER_SESSION_QUALIFIER_TAG = 50020
