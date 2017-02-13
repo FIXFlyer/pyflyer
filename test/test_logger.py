@@ -49,6 +49,59 @@ class LoggerTest(unittest.TestCase):
         self.assertIsNone(flyer.Logger.level_to_string(8))
         return
 
+
+
+TEST_DIR = "/tmp"
+
+
+
+class FileLogTest(unittest.TestCase):
+    def setUp(self):
+        return
+
+    def tearDown(self):
+        return
+
+    def test_del_no_close(self):
+        log = flyer.FileLog("test", TEST_DIR)
+        log.open()
+        log = None
+        return
+
+    def test_double_close(self):
+        log = flyer.FileLog("test", TEST_DIR)
+        log.open()
+        log.close()
+        log.close()
+        return
+
+    def test_close_no_open(self):
+        log = flyer.FileLog("test", TEST_DIR)
+        log.close()
+        return
+
+    def test_get_set_level(self):
+        log = flyer.FileLog("test", TEST_DIR)
+        log.set_level(flyer.DEBUG)
+        self.assertEqual(flyer.DEBUG, log.get_level())
+        log.set_level(flyer.EMERG)
+        self.assertEqual(flyer.EMERG, log.get_level())
+        return
+
+    def test_log_not_open(self):
+        log = flyer.FileLog("test", TEST_DIR)
+        log.log(flyer.EMERG, "i should not be here")
+        return
+
+    def test_log_filtered(self):
+        log = flyer.FileLog("test", TEST_DIR)
+        log.set_level(flyer.INFO)
+        log.log(flyer.DEBUG, "debug message should be filtered")
+        log.close()
+        return
+
+
+
 class FileLoggerTest(unittest.TestCase):
 
     def setUp(self):
@@ -57,7 +110,25 @@ class FileLoggerTest(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test_get_set_level(self):
+        log = flyer.FileLogger(TEST_DIR)
+        log.create_log("test")
+        log.set_log_level("test", flyer.DEBUG)
+        self.assertEqual(flyer.DEBUG, log.get_log_level("test"))
+        return
+
+    def test_log_simple(self):
+        logger = flyer.FileLogger(TEST_DIR)
+        logger.create_log("test")
+        logger.log("test", flyer.DEBUG, "test_log_simple")
+        return
+
+    def test_log_with_format(self):
+        logger = flyer.FileLogger(TEST_DIR)
+        logger.create_log("test")
+        logger.logf("test", flyer.DEBUG, "%s test #%u", "format", 1)
+        return
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main() # pragma: no cover

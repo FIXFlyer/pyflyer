@@ -97,9 +97,6 @@ class Logger(object):
             return None
         return NAMES[level]
 
-    def __init__(self):
-        self._logs = {}
-        return
 
     def create_log(self, log):
         """Create a new log instance.
@@ -110,7 +107,7 @@ class Logger(object):
         @retval 0
            Successful."""
         # pylint: disable=unused-argument,no-self-use
-        return
+        return # pragma: no cover
 
 
     def set_log_level(self, name, level):
@@ -127,8 +124,9 @@ class Logger(object):
 
         @retval ENOENT
             @p log does not exist."""
-        log = self._logs[name]
-        return log.set_level(level)
+
+        # pylint: disable=unused-argument,no-self-use
+        return # pragma: no cover
 
 
     def get_log_level(self, name):
@@ -147,9 +145,9 @@ class Logger(object):
 
         @retval ENOENT
             @p log does not exist."""
-        log = self._logs[name]
-        return log.get_level()
 
+        # pylint: disable=unused-argument,no-self-use
+        return # pragma: no cover
 
 
     def log(self, log, level, message):
@@ -171,7 +169,7 @@ class Logger(object):
         @retval 0
             Successful."""
         # pylint: disable=unused-argument,no-self-use
-        return
+        return # pragma: no cover
 
 
     def logf(self, log, level, template, *params):
@@ -213,9 +211,12 @@ class FileLog(object):
         self._file = None
         return
 
+
     def __del__(self):
-        self.close()
+        if self._file:
+            self.close()
         return
+
 
     def set_level(self, level):
         """Set current minimum log level.
@@ -230,6 +231,7 @@ class FileLog(object):
             @p log does not exist."""
         self._level = level
         return
+
 
     def get_level(self):
         """Get the current minimum log level.
@@ -246,6 +248,7 @@ class FileLog(object):
             @p log does not exist."""
         return self._level
 
+
     def open(self):
         """Open file for this log instance."""
 
@@ -261,13 +264,18 @@ class FileLog(object):
                                                            os.getpid()))
         return
 
+
     def close(self):
         """Close and clean up this log instance."""
+
+        if not self._file:
+            return
 
         self.raw_write("SYSTEM", "Closing log")
         self._file.close()
         self._file = None
         return
+
 
     def log(self, level, message):
         """Log a pre-formatted message."""
@@ -277,6 +285,7 @@ class FileLog(object):
 
         return self.raw_write(NAMES[level], message)
 
+
     def raw_write(self, level, message):
         """Write a log message to a file."""
 
@@ -284,10 +293,11 @@ class FileLog(object):
             return
 
         now = time.time()
-        timestamp = time.strftime("%Y-%m-%d %H:%M:%S.", now)
-        timestamp += "%06u" % (now - int(now)) * 1000000
-        file.write("%s %-7s %s\n" % (timestamp, level, message))
-        file.flush()
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S.", time.localtime(now))
+        us = (now - int(now)) * 1000000
+        timestamp += "%06u" % us
+        self._file.write("%s %-7s %s\n" % (timestamp, level, message))
+        self._file.flush()
         return
 
 
@@ -298,13 +308,20 @@ class FileLogger(Logger):
         """Constructor."""
         super(FileLogger, self).__init__()
         self._directory = directory
+        self._logs = {}
         return
+
 
     def __del__(self):
         """Destructor."""
-        for log in self._logs.values():
+
+        for name in self._logs:
+            log = self._logs[name]
             log.close()
+
+        self._logs = None
         return
+
 
     def create_log(self, name):
         """Create a new log instance.
@@ -317,6 +334,45 @@ class FileLogger(Logger):
 
         self._logs[name] = FileLog(name, self._directory)
         return
+
+
+    def set_log_level(self, name, level):
+        """Set current minimum log level.
+
+        @param[in] name
+            Name of a log instance.
+
+        @param[in] level
+            Minimum log level of messages to be emitted.
+
+        @retval 0
+            Successful.
+
+        @retval ENOENT
+            @p log does not exist."""
+        log = self._logs[name]
+        return log.set_level(level)
+
+
+    def get_log_level(self, name):
+        """Get the current minimum log level.
+
+        When logging a message, the caller specifies a level of
+        importance, in the range of zero (most important) to 7 (least
+        important).  Messages whose level is greater than the value
+        returned from this function are not emitted.
+
+        @param[in] name
+            Name of a log instance.
+
+        @retval 0
+            Successful.
+
+        @retval ENOENT
+            @p log does not exist."""
+        log = self._logs[name]
+        return log.get_level()
+
 
     def log(self, name, level, message):
         """Log a message.
