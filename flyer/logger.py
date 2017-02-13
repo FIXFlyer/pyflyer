@@ -51,6 +51,21 @@ LEVELS = {"EMERG": EMERG,
           "DEBUG": DEBUG}
 
 
+def get_user_name():
+
+    user = os.environ.get('USER', os.environ.get('LOGNAME'))
+    if user:
+        return user
+
+    if os.name == "posix":
+        import pwd
+        user = pwd.getpwuid(os.geteuid()).pw_name
+        if user:
+            return user
+
+    return "unknown"
+
+
 
 class Logger(object):
     """Logger interface.
@@ -253,7 +268,7 @@ class FileLog(object):
         """Open file for this log instance."""
 
         proc = psutil.Process(os.getpid()).name()
-        filename = "flyer-%s-%s-%s.log" % (os.getlogin(), proc, self._name)
+        filename = "flyer-%s-%s-%s.log" % (get_user_name(), proc, self._name)
         path = os.path.join(self._directory, filename)
 
         self._file = open(path, "a")
