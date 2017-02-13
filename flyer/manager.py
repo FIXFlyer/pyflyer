@@ -24,7 +24,7 @@ class Sender(object):
     Listener interface.
     """
 
-    def send_bytes(self, buffer, buflen):
+    def send_bytes(self, buf, buflen):
         """ Called by the API implementation to send a message to the
         Flyer Engine.
 
@@ -36,7 +36,7 @@ class Sender(object):
         should be called by the application when data is received
         from the TCP/IP socket.
 
-        @param[in] buffer
+        @param[in] buf
            Buffer of bytes to be sent.  No more than @p buflen
            bytes from this buffer should be sent using the socket
            connected to the Flyer Engine.  The ownership of this
@@ -198,6 +198,22 @@ class Listener(object):
 class ApplicationManager(object):
     """Main interface for Flyer FIX Engine client applications."""
 
+    def __init__(self):
+        """Constructor."""
+        self._sender = None
+        self._listener = None
+        self._store = None
+        self._subscriptions = {}
+        self._decoder = flyer.Decoder()
+        self._decoder.set_listener(self)
+        self._encoder = flyer.Encoder()
+        self._username = ""
+        self._password = ""
+        self._auto_commit = True
+        self._ready = False
+        self._send_buf = ""
+        return
+
     @staticmethod
     def create(sender, listener, logger, store):
         """Create an ApplicationManager instance.
@@ -293,6 +309,65 @@ class ApplicationManager(object):
             This pointer is invalid after the function returns."""
         pass
 
+    def set_sender(self, sender):
+        self._sender = sender
+        return
+
+    def set_listener(self, listener):
+        self._listener = listener
+        return
+
+    def set_store(self, store):
+        self._store = store
+        return
+
+    def is_ready(self):
+        """Returns whether the application manager is ready for operation.
+
+        Must have sent logon request, and received successful logon
+        response to become ready.
+
+        @returns
+            @c True if ready for operation, @c False otherwise."""
+        pass
+
+    def set_auto_commit(self, auto_commit=True):
+        """Set whether the API automatically commits received messages.
+
+        Received payload messages include a FIX sequence number.  This
+        sequence number is recorded for each subscribed FIX session,
+        so that if the client application is disconnected from the
+        engine, it can request retransmission of missed messages.
+
+        If @p auto_commit is @c True, the SDK will extract this
+        sequence number and persist it once the on_payload() listener
+        function returns.
+
+        If @p auto_commit is @c False, the client application should
+        call commit() directly for each message that it has received
+        and processed.
+
+        @sa is_auto_commit()
+        @sa commit()
+
+        @param[in] auto_commit
+            If @c true, record the sequence number of received messages
+            on arrival."""
+
+        self._auto_commit = auto_commit
+        return
+
+    def is_auto_commit(self):
+        """Check whether API is set to commit received messages automatically.
+
+        @sa set_auto_commit()
+        @sa commit()
+
+        @returns
+            @c True if automatic commit is enabled, @c False otherwise."""
+
+        return self._auto_commit
+
     def register_fix_session(self, begin_string, sender_comp_id, target_comp_id, session_qualifier):
         """Register a FIX session for processing by this application.
 
@@ -321,7 +396,32 @@ class ApplicationManager(object):
 
         @returns
             Session identifier, or @c None if already registered."""
-        pass
+
+        session = Session()
+        session.set_begin_string(begin_string)
+        session.set_sender_comp_id(sender_comp_id)
+        session.set_target_comp_id(target_comp_id)
+        if session_qualifier:
+            session.set_session_qualifier(session_qualifier)
+
+        sid = session.get_session_id()
+
+        if sid in self._subscriptions:
+            #FIXME: log
+            #raise DupKey
+            return
+
+        if self._store.has_session(sid):
+            session.update(store.get_session(sid))
+        else:
+            store.add_session(session)
+
+        self._subscriptions[sid] = session
+
+        #FIXME: log
+
+        return sid
+
 
     def remove_fix_session_by_id(self, session_id):
         """Deregister a FIX session for processing by this application.
@@ -336,7 +436,11 @@ class ApplicationManager(object):
 
         @retval ENOENT
             No matching session is registered."""
-        pass
+
+        del self._subscriptions[session_id]
+        #FIXME:log
+        return
+
 
     def remove_fix_session(self, begin_string, sender_comp_id, target_comp_id, session_qualifier):
         """Deregister a FIX session for processing by this application.
@@ -360,7 +464,18 @@ class ApplicationManager(object):
 
         @retval ENOENT
             No matching session is registered."""
-        pass
+
+        session = Session()
+        session.set_begin_string(begin_string)
+        session.set_sender_comp_id(sender_comp_id)
+        session.set_target_comp_id(target_comp_id)
+        if session_qualifier:
+            session.set_session_qualifier(session_qualifier)
+
+        sid = session.get_session_id()
+
+        return self.remove_fix_session_by_id(sid)
+
 
     def is_fix_session_registered(self, begin_string, sender_comp_id, target_comp_id, session_qualifier, session_id_out):
         """Check whether a FIX session is registered for processing by
@@ -386,7 +501,21 @@ class ApplicationManager(object):
 
         @returns
             @c True if registered, @c False otherwise."""
-        pass
+
+        session = Session()
+        session.set_begin_string(begin_string)
+        session.set_sender_comp_id(sender_comp_id)
+        session.set_target_comp_id(target_comp_id)
+        if session_qualifier:
+            session.set_session_qualifier(session_qualifier)
+
+        sid = session.get_session_id()
+
+        if sid in self._subscriptions:
+            return sid
+
+        return
+
 
     def load_all_fix_session_subscriptions(self):
         """Register all sessions recorded in persistent session state.
@@ -395,50 +524,6 @@ class ApplicationManager(object):
 
         @returns
             0 on success."""
-        pass
-
-    def is_ready(self):
-        """Returns whether the application manager is ready for operation.
-
-        Must have sent logon request, and received successful logon
-        response to become ready.
-
-        @returns
-            @c True if ready for operation, @c False otherwise."""
-        pass
-
-    def set_auto_commit(self, auto_commit):
-        """Set whether the API automatically commits received messages.
-
-        Received payload messages include a FIX sequence number.  This
-        sequence number is recorded for each subscribed FIX session,
-        so that if the client application is disconnected from the
-        engine, it can request retransmission of missed messages.
-
-        If @p auto_commit is @c True, the SDK will extract this
-        sequence number and persist it once the on_payload() listener
-        function returns.
-
-        If @p auto_commit is @c False, the client application should
-        call commit() directly for each message that it has received
-        and processed.
-
-        @sa is_auto_commit()
-        @sa commit()
-
-        @param[in] auto_commit
-            If @c true, record the sequence number of received messages
-            on arrival."""
-        pass
-
-    def is_auto_commit(self):
-        """Check whether API is set to commit received messages automatically.
-
-        @sa set_auto_commit()
-        @sa commit()
-
-        @returns
-            @c True if automatic commit is enabled, @c False otherwise."""
         pass
 
     def commit(self, session_id, sequence_number):
@@ -487,7 +572,17 @@ class ApplicationManager(object):
 
         @retval 0
             Successful."""
-        pass
+
+        self._username = username
+        self._password = password
+
+        #FIXME: log
+
+        msg = self._encoder.encode_logon_request(self._username,
+                                                 self._password,
+                                                 self._subscriptions)
+        return self.send_or_queue(msg)
+
 
     def logout(self):
         """Initiate logout from the Flyer Engine.
@@ -504,7 +599,12 @@ class ApplicationManager(object):
 
         @retval 0
             Successful."""
-        pass
+
+        #FIXME: log
+        msg = self._encoder.encode_logout_request(self._username,
+                                                  self._password)
+        return self.send_or_queue(msg)
+
 
     def heartbeat_ack(self, hbid):
         """Send a heartbeat acknowledgement to the Flyer Engine.
@@ -517,7 +617,11 @@ class ApplicationManager(object):
 
         @retval 0
             Successful."""
-        pass
+
+        #FIXME: log
+        msg = self._encoder.encode_heartbeat_ack(hbid)
+        return self.send_or_queue(msg)
+
 
     def restore(self, session_id, begin, end):
         """Request the Flyer Engine resend a range of messages from a
@@ -537,7 +641,19 @@ class ApplicationManager(object):
 
         @retval ENOENT
             Session not found."""
-        pass
+
+        session = self._subscriptions.get(session_id)
+        if not session:
+            #FIXME: log
+            #raise NoKey
+            return
+
+        msg = self._encoder.encode_restore(session.get_sender_compid(),
+                                           session.get_target_compid(),
+                                           begin,
+                                           end)
+        return self.send_or_queue(msg)
+
 
     def send(self, session_id, message_type, sequence_number, possible_duplicate, possible_resend, message, message_id):
         """Send an application message to the Flyer Engine.
@@ -574,7 +690,7 @@ class ApplicationManager(object):
         # FIXME: change C++ parameter order to match?
         pass
 
-    def receive_bytes(self, buffer, buflen):
+    def receive_bytes(self, buf, buflen):
         """Pass data received from the Flyer Engine to the API.
 
         When the client application receives data from the TCP/IP
@@ -592,7 +708,7 @@ class ApplicationManager(object):
         used to pass data to the client application to be sent to the
         Flyer Engine.
 
-        @param[in] buffer
+        @param[in] buf
             Buffer of received bytes.  The caller (the client
             application) retains ownership of this buffer: it can be
             overwritten or freed once this function returns.
@@ -605,7 +721,15 @@ class ApplicationManager(object):
             behaviour of the POSIX @em recv(2) system call, and the
             Winsock @em recv() function, both of which return zero to
             indicate the session peer's disconnection."""
-        pass
+
+        if buflen == 0:
+            self._listener.on_disconnect()
+            #FIXME: clean up session state.
+            return
+
+        self._decoder.receive_bytes(buf, buflen)
+        return
+
 
     def flush(self):
         """Request that the libary attempt to send its queued data.
@@ -626,39 +750,9 @@ class ApplicationManager(object):
         @returns
         Zero on success; any other value is an error code reported
         by Sender::send_bytes()."""
-        pass
 
+        #FIXME: log.
 
-class Event(object):
-    pass
-
-
-class OnLogonEvent(Event):
-    pass
-
-
-class OnSessionLogonEvent(Event):
-    pass
-
-
-class OnSessionLogoutEvent(Event):
-    pass
-
-
-class OnCommitEvent(Event):
-    pass
-
-
-class OnResendEvent(Event):
-    pass
-
-
-class OnHeartbeatEvent(Event):
-    pass
-
-
-class OnErrorEvent(Event):
-    pass
-
-class OnPayloadEvent(Event):
-    pass
+        buf = self._send_buf
+        self._send_buf = ""
+        return send_or_queue(buf)
