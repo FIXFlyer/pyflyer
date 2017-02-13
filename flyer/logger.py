@@ -104,7 +104,7 @@ class Logger(object):
 
         @retval 0
            Successful."""
-        pass
+        return
 
 
     def set_log_level(self, log, level):
@@ -121,7 +121,7 @@ class Logger(object):
 
         @retval ENOENT
             @p log does not exist."""
-        pass
+        return
 
 
     def get_log_level(self, log, level_out):
@@ -142,7 +142,7 @@ class Logger(object):
 
         @retval ENOENT
             @p log does not exist."""
-        pass
+        return
 
 
     def log(self, log, level, message):
@@ -163,7 +163,7 @@ class Logger(object):
 
         @retval 0
             Successful."""
-        pass
+        return
 
 
     def logf(self, log, level, format, *params):

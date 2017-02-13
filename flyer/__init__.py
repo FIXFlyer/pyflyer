@@ -11,6 +11,6 @@ from flyer.manager import ApplicationManager
 from flyer.manager import Listener
 from flyer.manager import Sender
 
-from flyer.logger import Logger
+from flyer.logger import ALERT, CRIT, DEBUG, EMERG, ERR, INFO, NOTICE, WARNING, Logger, FileLog, FileLogger
 from flyer.store import SessionStore
 from flyer.fix import Message

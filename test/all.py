@@ -28,6 +28,8 @@
 import unittest
 
 from test_event import EventTest
+from test_logger import LoggerTest
+from test_logger import FileLoggerTest
 
 if __name__ == "__main__":
     unittest.main()
