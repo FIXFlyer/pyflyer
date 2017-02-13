@@ -6,9 +6,11 @@
 # COPYRIGHT_END
 #-----------------------------------------------------------------------
 
+"""Logging support."""
+
 import os
-import psutil
 import time
+import psutil
 
 
 # Emergency message level.
@@ -95,6 +97,9 @@ class Logger(object):
             return None
         return NAMES[level]
 
+    def __init__(self):
+        self._logs = {}
+        return
 
     def create_log(self, log):
         """Create a new log instance.
@@ -104,13 +109,14 @@ class Logger(object):
 
         @retval 0
            Successful."""
+        # pylint: disable=unused-argument,no-self-use
         return
 
 
-    def set_log_level(self, log, level):
+    def set_log_level(self, name, level):
         """Set current minimum log level.
 
-        @param[in] log
+        @param[in] name
             Name of a log instance.
 
         @param[in] level
@@ -121,10 +127,11 @@ class Logger(object):
 
         @retval ENOENT
             @p log does not exist."""
-        return
+        log = self._logs[name]
+        return log.set_level(level)
 
 
-    def get_log_level(self, log, level_out):
+    def get_log_level(self, name):
         """Get the current minimum log level.
 
         When logging a message, the caller specifies a level of
@@ -132,17 +139,17 @@ class Logger(object):
         important).  Messages whose level is greater than the value
         returned from this function are not emitted.
 
-        @param[in] log
+        @param[in] name
             Name of a log instance.
 
-        @param[out] level_out
-            Minimum level of messages to be emitted for this log instance.
         @retval 0
             Successful.
 
         @retval ENOENT
             @p log does not exist."""
-        return
+        log = self._logs[name]
+        return log.get_level()
+
 
 
     def log(self, log, level, message):
@@ -163,10 +170,11 @@ class Logger(object):
 
         @retval 0
             Successful."""
+        # pylint: disable=unused-argument,no-self-use
         return
 
 
-    def logf(self, log, level, format, *params):
+    def logf(self, log, level, template, *params):
         """Log a message, constructed printf()-style.
 
         When implementing a Logger, providing this function is
@@ -182,8 +190,8 @@ class Logger(object):
             is least important.
 
 
-        @param[in] format
-            printf()-style format string used to create the message.
+        @param[in] template
+            printf()-style template string used to create the message.
 
         @param[in] params
             Parameters to be substituted into the @p format string.
@@ -191,11 +199,13 @@ class Logger(object):
         @retval 0
             Successful."""
 
-        return self.log(log, level, format % params)
+        return self.log(log, level, template % params)
 
 
 
 class FileLog(object):
+    """Simple, file-based, log implementation."""
+
     def __init__(self, name, directory):
         self._name = name
         self._directory = directory
@@ -208,13 +218,37 @@ class FileLog(object):
         return
 
     def set_level(self, level):
+        """Set current minimum log level.
+
+        @param[in] level
+            Minimum log level of messages to be emitted.
+
+        @retval 0
+            Successful.
+
+        @retval ENOENT
+            @p log does not exist."""
         self._level = level
         return
 
     def get_level(self):
+        """Get the current minimum log level.
+
+        When logging a message, the caller specifies a level of
+        importance, in the range of zero (most important) to 7 (least
+        important).  Messages whose level is greater than the value
+        returned from this function are not emitted.
+
+        @retval 0
+            Successful.
+
+        @retval ENOENT
+            @p log does not exist."""
         return self._level
 
     def open(self):
+        """Open file for this log instance."""
+
         proc = psutil.Process(os.getpid()).name()
         filename = "flyer-%s-%s-%s.log" % (os.getlogin(), proc, self._name)
         path = os.path.join(self._directory, filename)
@@ -228,25 +262,31 @@ class FileLog(object):
         return
 
     def close(self):
+        """Close and clean up this log instance."""
+
         self.raw_write("SYSTEM", "Closing log")
         self._file.close()
         self._file = None
         return
 
     def log(self, level, message):
+        """Log a pre-formatted message."""
+
         if level > self._level:
             return
 
         return self.raw_write(NAMES[level], message)
 
     def raw_write(self, level, message):
+        """Write a log message to a file."""
+
         if not self._file:
             return
 
         now = time.time()
-        ts = time.strftime("%Y-%m-%d %H:%M:%S.", now)
-        ts += "%06u" % (now - int(now)) * 1000000
-        file.write("%s %-7s %s\n" % (ts, level, message))
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S.", now)
+        timestamp += "%06u" % (now - int(now)) * 1000000
+        file.write("%s %-7s %s\n" % (timestamp, level, message))
         file.flush()
         return
 
@@ -256,8 +296,8 @@ class FileLogger(Logger):
 
     def __init__(self, directory):
         """Constructor."""
+        super(FileLogger, self).__init__()
         self._directory = directory
-        self._logs = {}
         return
 
     def __del__(self):
@@ -277,46 +317,6 @@ class FileLogger(Logger):
 
         self._logs[name] = FileLog(name, self._directory)
         return
-
-    def set_log_level(self, name, level):
-        """Set current minimum log level.
-
-        @param[in] name
-            Name of a log instance.
-
-        @param[in] level
-            Minimum log level of messages to be emitted.
-
-        @retval 0
-            Successful.
-
-        @retval ENOENT
-            @p log does not exist."""
-
-        log = self._logs[name]
-        return log.set_level(level)
-
-    def get_log_level(self, name, level_out):
-        """Get the current minimum log level.
-
-        When logging a message, the caller specifies a level of
-        importance, in the range of zero (most important) to 7 (least
-        important).  Messages whose level is greater than the value
-        returned from this function are not emitted.
-
-        @param[in] name
-            Name of a log instance.
-
-        @param[out] level_out
-            Minimum level of messages to be emitted for this log instance.
-        @retval 0
-            Successful.
-
-        @retval ENOENT
-            @p log does not exist."""
-
-        log = self._logs[name]
-        return log.get_level()
 
     def log(self, name, level, message):
         """Log a message.
