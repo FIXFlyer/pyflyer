@@ -15,4 +15,7 @@ from flyer.manager import Listener
 from flyer.manager import Sender
 from flyer.store import SessionStore
 
+from . import protocol
+
+
 from flyer.fix import Message
