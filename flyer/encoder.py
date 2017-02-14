@@ -9,7 +9,7 @@
 """Protocol encoder."""
 
 import time
-import md5
+import hashlib
 import flyer
 
 
@@ -28,7 +28,7 @@ class Encoder(object):
     def encode_logon_request(user, password, subs):
         """Encode LogonRequest message."""
 
-        hasher = md5.md5(password)
+        hasher = hashlib.md5(password)
 
         buf = "50001=%u\x01" % flyer.protocol.COMMON_MESSAGE_TYPE
         buf += "50011=%u\x01" % flyer.protocol.LOGON_REQUEST_EVENT_ID
@@ -56,7 +56,7 @@ class Encoder(object):
     def encode_logout_request(user, password):
         """Encode LogoutRequest message."""
 
-        hasher = md5.md5(password)
+        hasher = hashlib.md5(password)
 
         buf = "50001=%u\0x1" % flyer.protocol.COMMON_MESSAGE_TYPE
         buf += "50011=%u\x01" % flyer.protocol.LOGOUT_REQUEST_EVENT_ID
