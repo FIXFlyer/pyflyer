@@ -30,7 +30,7 @@ class Encoder(object):
 
         hasher = md5.md5(password)
 
-        buf = "50001=%u\0x1" % flyer.protocol.COMMON_MESSAGE_TYPE
+        buf = "50001=%u\x01" % flyer.protocol.COMMON_MESSAGE_TYPE
         buf += "50011=%u\x01" % flyer.protocol.LOGON_REQUEST_EVENT_ID
         buf += "50013=#Logon\r\n"
         buf += "%s\r\n" % get_event_timestamp()
