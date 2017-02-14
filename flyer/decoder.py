@@ -20,6 +20,7 @@ class Decoder(object):
 
     def __init__(self):
         self._listener = None
+        self._buf = ""
         return
 
 
@@ -28,8 +29,8 @@ class Decoder(object):
         return
 
 
-    def receive_bytes(self, buf):
-        self._buf += buf
+    def receive_bytes(self, buf, buflen):
+        self._buf += buf[:buflen]
         return
 
 
