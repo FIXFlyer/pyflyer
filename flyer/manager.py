@@ -6,6 +6,9 @@
 # COPYRIGHT_END
 #-----------------------------------------------------------------------
 
+import flyer
+
+
 class Sender(object):
     """TCP/IP socket adaptor interface.
 
@@ -198,25 +201,8 @@ class Listener(object):
 class ApplicationManager(object):
     """Main interface for Flyer FIX Engine client applications."""
 
-    def __init__(self):
-        """Constructor."""
-        self._sender = None
-        self._listener = None
-        self._store = None
-        self._subscriptions = {}
-        self._decoder = flyer.Decoder()
-        self._decoder.set_listener(self)
-        self._encoder = flyer.Encoder()
-        self._username = ""
-        self._password = ""
-        self._auto_commit = True
-        self._ready = False
-        self._send_buf = ""
-        return
-
-    @staticmethod
-    def create(sender, listener, logger, store):
-        """Create an ApplicationManager instance.
+    def __init__(self, sender, listener, logger = None, store = None):
+        """Constructor.
 
         This factory function returns a pointer to a newly created
         ApplicationManager.  The client application must supply a
@@ -298,27 +284,20 @@ class ApplicationManager(object):
             successful, or a null pointer otherwise.  Once no longer
             needed, the instance must be reclaimed using destroy()
             (ie. not @c delete)."""
-        pass
-
-    @staticmethod
-    def destroy(manager):
-        """Destroy an application manager instance.
-
-        @param[in] manager
-            Pointer to ApplicationManager instance to be destroyed.
-            This pointer is invalid after the function returns."""
-        pass
-
-    def set_sender(self, sender):
         self._sender = sender
-        return
-
-    def set_listener(self, listener):
         self._listener = listener
-        return
-
-    def set_store(self, store):
+        self._logger = logger
         self._store = store
+
+        self._subscriptions = {}
+        self._decoder = flyer.Decoder()
+        self._decoder.set_listener(self)
+        self._encoder = flyer.Encoder()
+        self._username = ""
+        self._password = ""
+        self._auto_commit = True
+        self._ready = False
+        self._send_buf = ""
         return
 
     def is_ready(self):
@@ -581,7 +560,7 @@ class ApplicationManager(object):
         msg = self._encoder.encode_logon_request(self._username,
                                                  self._password,
                                                  self._subscriptions)
-        return self.send_or_queue(msg)
+        return self._send_or_queue(msg, len(msg))
 
 
     def logout(self):
@@ -756,3 +735,17 @@ class ApplicationManager(object):
         buf = self._send_buf
         self._send_buf = ""
         return send_or_queue(buf)
+
+
+    def _send_or_queue(self, buf, buflen):
+        if len(self._send_buf) > 0:
+            self._send_buf += buf[:buflen]
+            #FIXME: log
+            return
+
+        sent = self._sender.send_bytes(buf, buflen)
+        if sent != buflen:
+            self._send_buf += buf[sent:]
+            #FIXME: log
+
+        return
